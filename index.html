@@ -1,0 +1,84 @@
+<html>
+    <head>
+        <script src="https://code.jquery.com/jquery-1.12.4.min.js" integrity="sha256-ZosEbRLbNQzLpnKIkEdrPv7lOy9C27hHQ+Xp8a4MxAQ=" crossorigin="anonymous"></script>        
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.4.1/js/bootstrap.min.js"></script>
+        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
+        <script src="https://cdn.jsdelivr.net/gh/xcash/bootstrap-autocomplete@v2.3.0/dist/latest/bootstrap-autocomplete.min.js"></script>
+        <script  type="text/javascript" src="./js/typeahead.js"></script>
+        <script  type="text/javascript" src="./js/prettyDate.js"></script>
+        <style type="text/css" src="./css/default.css"></style>
+        <link rel="stylesheet" href="./css/default.css">
+
+        <script type="text/javascript">
+            var autocompleteDictionary = [];
+            $(document).ready(function() {                
+                $.ajax({
+                    type: "GET",
+                    url: "https://api.github.com/users/magento/repos",
+                    dataType: "json",
+                    success: function(result) {                        
+                        for(var i in result ) {
+                            var description = result[i].description ? result[i].description : '';
+                            var folked = result[i].fork ? 'folked' : '' ;
+
+                            $("#repo_list").append(
+                                "<div class='card "+folked+"' style='width: 18rem;'>" +
+                                "  <div class='card-body'>"+
+                                "    <h5 class='card-title'>"+result[i].name+"</h5>" +
+                                "    <p class='card-text prettydate'>"+result[i].created_at+"</p>"+
+                                "    <h6 class='card-subtitle mb-2 text-muted'>"+description +"</h6>"+
+                                "    <p>Stargazers : <a href='"+result[i].stargazers_url+"' target='_blank' class='card-link'>"+result[i].stargazers_count+"</a></p>"+
+                                "    <a href='"+result[i].svn_url+"' target='_blank' class='card-link'>Visit Repo</a>"+
+                                "  </div>"+
+                                "</div>"
+                            );
+                            // Defining the local dataset
+                            autocompleteDictionary.push(result[i].name);                            
+                        }
+                        $("#repo_count").append("Total Repos: " + result.length);
+                    }
+                })
+                .done(function( data ) {
+                    // beatify created dates
+                    $(".prettydate").prettydate();
+
+                    // Constructing the suggestion engine
+                    var dictionary = new Bloodhound({
+                        datumTokenizer: Bloodhound.tokenizers.whitespace,
+                        queryTokenizer: Bloodhound.tokenizers.whitespace,
+                        local: autocompleteDictionary
+                    });
+
+                    // Initializing the typeahead
+                    $('.typeahead').typeahead({
+                        hint: true,
+                        highlight: true, /* Enable substring highlighting */
+                        minLength: 1 /* Specify minimum characters required for showing result */
+                    },
+                    {
+                        name: 'Repos',
+                        source: dictionary
+                    });                              
+                });
+
+                $("#repoFilter").on("change keyup input", function() {
+                    var value = $(this).val().toLowerCase();
+                    $("#repo_list .card-title").filter(function() {
+                        $(this).parents(".card").toggle($(this).text().toLowerCase().indexOf(value) > -1)
+                    });
+                    });      
+                });
+        </script>        
+    </head>
+    <body>
+        <div  class="container" >
+            <div class="row mb-3 mt-3">
+                <input type="text" class="typeahead tt-query" id="repoFilter" autocomplete="off" spellcheck="false" placeholder="Filter repo..">
+            </div>
+            <div class="card-columns" id="repo_list">                
+            </div>
+            <div id="repo_count"></div>
+        </div>
+    </body>
+</html>
+
